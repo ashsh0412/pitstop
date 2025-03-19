@@ -38,6 +38,7 @@ dependencies:
   provider: ^6.1.2 # For state management
   shared_preferences: ^2.2.2 # For local storage
   google_fonts: ^6.2.1 # For better typography
+  url_launcher: ^6.2.5 # For launching URLs
 
 dev_dependencies:
   flutter_test:

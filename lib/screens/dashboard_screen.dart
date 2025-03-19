@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/vehicle_data_provider.dart';
+import '../providers/settings_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,8 +18,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(Duration(milliseconds: 1000), (timer) {
-      Provider.of<VehicleDataProvider>(context, listen: false).updateMockData();
+    _timer = Timer.periodic(const Duration(milliseconds: 1000), (_) {
+      if (mounted) {
+        Provider.of<VehicleDataProvider>(
+          context,
+          listen: false,
+        ).updateMockData();
+      }
     });
   }
 
@@ -26,6 +32,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  String _formatSpeed(double speed, bool useMetric) {
+    if (useMetric) {
+      return '${speed.toStringAsFixed(1)} km/h';
+    } else {
+      return '${(speed * 0.621371).toStringAsFixed(1)} mph';
+    }
+  }
+
+  String _formatTemperature(double temp, bool useCelsius) {
+    if (useCelsius) {
+      return '${temp.toStringAsFixed(1)}°C';
+    } else {
+      return '${(temp * 9 / 5 + 32).toStringAsFixed(1)}°F';
+    }
+  }
+
+  String _formatFuelEfficiency(double efficiency, bool useMetric) {
+    if (useMetric) {
+      return '${efficiency.toStringAsFixed(1)} km/L';
+    } else {
+      return '${(efficiency * 2.35215).toStringAsFixed(1)} mpg';
+    }
   }
 
   @override
@@ -36,9 +66,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.blue,
         elevation: 0,
       ),
-      body: Consumer<VehicleDataProvider>(
-        builder: (context, provider, child) {
-          final data = provider.data;
+      body: Consumer2<VehicleDataProvider, SettingsProvider>(
+        builder: (context, vehicleData, settings, child) {
+          final data = vehicleData.data;
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -48,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -60,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 2,
@@ -75,7 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         _buildDataCard(
                           "Speed",
-                          "${data.speed.toStringAsFixed(1)} km/h",
+                          _formatSpeed(data.speed, settings.useMetricSystem),
                           Icons.directions_car,
                           Colors.green,
                         ),
@@ -87,13 +117,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         _buildDataCard(
                           "Fuel Efficiency",
-                          "${data.fuelEfficiency.toStringAsFixed(1)} km/L",
+                          _formatFuelEfficiency(
+                            data.fuelEfficiency,
+                            settings.useMetricSystem,
+                          ),
                           Icons.local_gas_station,
                           Colors.orange,
                         ),
                         _buildDataCard(
                           "Engine Temp",
-                          "${data.engineTemp.toStringAsFixed(1)}°C",
+                          _formatTemperature(
+                            data.engineTemp,
+                            settings.useCelsius,
+                          ),
                           Icons.thermostat,
                           Colors.red,
                         ),
@@ -127,19 +163,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(
+              red: 0,
+              green: 0,
+              blue: 0,
+              alpha: 26,
+            ),
             blurRadius: 10,
-            spreadRadius: 2,
+            offset: const Offset(0, 2),
+            spreadRadius: 1,
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 40, color: color),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               title,
               style: GoogleFonts.orbitron(
@@ -147,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               value,
               style: GoogleFonts.orbitron(
