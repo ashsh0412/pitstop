@@ -1,23 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/diagnostics_screen.dart';
 import 'screens/data_analysis_screen.dart';
 import 'screens/settings_screen.dart';
+import 'providers/vehicle_data_provider.dart';
+import 'providers/settings_provider.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final settingsProvider = SettingsProvider();
+  await settingsProvider.init();
+
+  runApp(MyApp(settingsProvider: settingsProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SettingsProvider settingsProvider;
+
+  const MyApp({super.key, required this.settingsProvider});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'OBD2 Car Monitor',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: MainScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settingsProvider),
+        ChangeNotifierProvider(create: (_) => VehicleDataProvider()),
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'OBD2 Car Monitor',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              brightness:
+                  settings.isDarkMode ? Brightness.dark : Brightness.light,
+              useMaterial3: true,
+            ),
+            home: MainScreen(),
+          );
+        },
+      ),
     );
   }
 }
@@ -26,7 +51,7 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  _MainScreenState createState() => _MainScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
@@ -70,6 +95,8 @@ class _MainScreenState extends State<MainScreen> {
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey[700], // Added darker unselected color
+        type: BottomNavigationBarType.fixed, // Added to ensure consistent style
         onTap: _onItemTapped,
       ),
     );
