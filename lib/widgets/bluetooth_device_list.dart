@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/obd_provider.dart';
-import '../styles.dart';
 
 class BluetoothDeviceList extends StatelessWidget {
   const BluetoothDeviceList({Key? key}) : super(key: key);
@@ -19,7 +18,9 @@ class BluetoothDeviceList extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 'Discovered Devices',
-                style: AppStyles.boldText,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -93,7 +94,11 @@ class BluetoothDeviceList extends StatelessWidget {
                   ],
                 ),
                 trailing: ElevatedButton(
-                  style: AppStyles.elevatedButtonStyle,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.pop(context);
                     if (device.isConnected) {
@@ -118,7 +123,9 @@ class BluetoothDeviceList extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 'Paired Devices',
-                style: AppStyles.boldText,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -168,7 +175,11 @@ class BluetoothDeviceList extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ElevatedButton(
-                      style: AppStyles.elevatedButtonStyle,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(context);
                         if (device.isConnected) {

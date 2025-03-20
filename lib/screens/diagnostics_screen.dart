@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/obd_provider.dart';
-import '../models/diagnostic_code.dart';
+import '../providers/diagnostic_code.dart';
 import '../widgets/connection_status_card.dart';
 import '../widgets/error_codes_card.dart';
 import '../widgets/bluetooth_required_message.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/diagnostic_code.dart';
+import '../providers/diagnostic_code.dart';
 import '../providers/obd_provider.dart';
 
 class ErrorCodesCard extends StatelessWidget {

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io' show Platform;
-import '../services/obd_service.dart';
+import 'obd_service.dart';
 import 'package:flutter/foundation.dart';
-import '../models/diagnostic_code.dart';
+import 'diagnostic_code.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as blue_plus;
 import 'package:permission_handler/permission_handler.dart';
