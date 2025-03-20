@@ -7,76 +7,73 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), elevation: 0),
-      body: Consumer<SettingsProvider>(
-        builder: (context, settings, child) {
-          return ListView(
-            children: [
-              _buildSection('Display Settings', [
-                SwitchListTile(
-                  title: const Text('Dark Mode'),
-                  subtitle: const Text('Enable dark theme'),
-                  value: settings.isDarkMode,
-                  onChanged: (value) => settings.setDarkMode(value),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return ListView(
+          children: [
+            _buildSection('Display Settings', [
+              SwitchListTile(
+                title: const Text('Dark Mode'),
+                subtitle: const Text('Enable dark theme'),
+                value: settings.isDarkMode,
+                onChanged: (value) => settings.setDarkMode(value),
+              ),
+            ]),
+            _buildSection('Measurement Units', [
+              SwitchListTile(
+                title: const Text('Use Metric System'),
+                subtitle: Text(
+                  settings.useMetricSystem ? 'km/h, km/L' : 'mph, mpg',
                 ),
-              ]),
-              _buildSection('Measurement Units', [
-                SwitchListTile(
-                  title: const Text('Use Metric System'),
-                  subtitle: Text(
-                    settings.useMetricSystem ? 'km/h, km/L' : 'mph, mpg',
-                  ),
-                  value: settings.useMetricSystem,
-                  onChanged: (value) => settings.setMetricSystem(value),
+                value: settings.useMetricSystem,
+                onChanged: (value) => settings.setMetricSystem(value),
+              ),
+              SwitchListTile(
+                title: const Text('Temperature Unit'),
+                subtitle: Text(
+                  settings.useCelsius ? 'Celsius (°C)' : 'Fahrenheit (°F)',
                 ),
-                SwitchListTile(
-                  title: const Text('Temperature Unit'),
-                  subtitle: Text(
-                    settings.useCelsius ? 'Celsius (°C)' : 'Fahrenheit (°F)',
-                  ),
-                  value: settings.useCelsius,
-                  onChanged: (value) => settings.setUseCelsius(value),
-                ),
-              ]),
-              _buildSection('Data Update Settings', [
-                ListTile(
-                  title: const Text('Update Interval'),
-                  subtitle: Text('${settings.updateInterval} ms'),
-                  trailing: DropdownButton<int>(
-                    value: settings.updateInterval,
-                    items: [
-                      for (var interval in [500, 1000, 2000, 5000])
-                        DropdownMenuItem(
-                          value: interval,
-                          child: Text('$interval ms'),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        settings.setUpdateInterval(value);
-                      }
-                    },
-                  ),
-                ),
-              ]),
-              _buildSection('About', [
-                ListTile(
-                  title: const Text('Version'),
-                  subtitle: const Text('1.0.0'),
-                ),
-                ListTile(
-                  title: const Text('Developer'),
-                  subtitle: const Text('Your Name'),
-                  onTap: () {
-                    // Add developer contact or website link
+                value: settings.useCelsius,
+                onChanged: (value) => settings.setUseCelsius(value),
+              ),
+            ]),
+            _buildSection('Data Update Settings', [
+              ListTile(
+                title: const Text('Update Interval'),
+                subtitle: Text('${settings.updateInterval} ms'),
+                trailing: DropdownButton<int>(
+                  value: settings.updateInterval,
+                  items: [
+                    for (var interval in [500, 1000, 2000, 5000])
+                      DropdownMenuItem(
+                        value: interval,
+                        child: Text('$interval ms'),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      settings.setUpdateInterval(value);
+                    }
                   },
                 ),
-              ]),
-            ],
-          );
-        },
-      ),
+              ),
+            ]),
+            _buildSection('About', [
+              const ListTile(
+                title: Text('Version'),
+                subtitle: Text('1.0.0'),
+              ),
+              ListTile(
+                title: const Text('Developer'),
+                subtitle: const Text('Your Name'),
+                onTap: () {
+                  // Add developer contact or website link
+                },
+              ),
+            ]),
+          ],
+        );
+      },
     );
   }
 

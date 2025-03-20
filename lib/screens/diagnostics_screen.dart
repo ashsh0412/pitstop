@@ -1,297 +1,219 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/diagnostics_provider.dart';
-import '../providers/vehicle_state_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../providers/obd_provider.dart';
+import '../widgets/bluetooth_device_list.dart';
+import '../models/diagnostic_code.dart';
 
 class DiagnosticsScreen extends StatelessWidget {
-  const DiagnosticsScreen({super.key});
+  const DiagnosticsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DiagnosticsProvider, VehicleStateProvider>(
-      builder: (context, diagnosticsProvider, vehicleState, _) {
+    return Consumer<OBDProvider>(
+      builder: (context, obdProvider, child) {
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Diagnostics'),
-            actions: [
-              Switch(
-                value: diagnosticsProvider.isConnected,
-                onChanged: (value) => diagnosticsProvider.toggleConnection(),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  if (vehicleState.canUseDiagnostics()) {
-                    diagnosticsProvider.refreshDTCs();
-                  } else {
-                    _showDrivingModeDialog(context);
-                  }
-                },
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatusCard(
-                      context,
-                      icon: Icons.error,
-                      label: 'Critical',
-                      count: diagnosticsProvider.criticalCount,
-                      color: Colors.red,
+          body: SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top,
+              child: Column(
+                children: [
+                  // Connection Status
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.grey[100],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          obdProvider.isConnected
+                              ? '연결됨: ${obdProvider.deviceName}'
+                              : '연결 안됨',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (obdProvider.isConnected)
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => obdProvider.disconnect(),
+                          ),
+                      ],
                     ),
-                    _buildStatusCard(
-                      context,
-                      icon: Icons.warning,
-                      label: 'Warning',
-                      count: diagnosticsProvider.warningCount,
-                      color: Colors.orange,
-                    ),
-                    _buildStatusCard(
-                      context,
-                      icon: Icons.info,
-                      label: 'Info',
-                      count: diagnosticsProvider.infoCount,
-                      color: Colors.blue,
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  'Diagnostic Trouble Codes (DTC)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child:
-                    diagnosticsProvider.dtcs.isEmpty
-                        ? const Center(
-                          child: Text('No diagnostic trouble codes found'),
-                        )
-                        : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: diagnosticsProvider.dtcs.length,
-                          itemBuilder: (context, index) {
-                            final dtc = diagnosticsProvider.dtcs[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ExpansionTile(
-                                leading: Icon(
-                                  _getSeverityIcon(dtc.severity),
-                                  color: _getSeverityColor(dtc.severity),
+                  ),
+                  // Content
+                  Expanded(
+                    child: obdProvider.isConnected
+                        ? SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    '실시간 데이터',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                  ),
                                 ),
-                                title: Text(dtc.code),
-                                subtitle: Text(dtc.description),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                GridView.count(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  crossAxisCount: 2,
+                                  padding: const EdgeInsets.all(16),
+                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: 16,
+                                  childAspectRatio: 1.5,
+                                  children: [
+                                    _buildDataCard(
+                                      context,
+                                      '속도',
+                                      '${obdProvider.speed} km/h',
+                                      Icons.speed,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      'RPM',
+                                      '${obdProvider.rpm}',
+                                      Icons.rotate_right,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '엔진 온도',
+                                      '${obdProvider.engineTemp}°C',
+                                      Icons.thermostat,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '배터리 전압',
+                                      '${obdProvider.batteryVoltage}V',
+                                      Icons.battery_charging_full,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '연료 압력',
+                                      '${obdProvider.fuelPressure} kPa',
+                                      Icons.local_gas_station,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '흡기 압력',
+                                      '${obdProvider.intakePressure} kPa',
+                                      Icons.air,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '스로틀 위치',
+                                      '${obdProvider.throttlePosition}%',
+                                      Icons.speed,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '엔진 부하',
+                                      '${obdProvider.engineLoad}%',
+                                      Icons.engineering,
+                                    ),
+                                    _buildDataCard(
+                                      context,
+                                      '연비',
+                                      '${obdProvider.fuelEconomy.toStringAsFixed(1)} km/L',
+                                      Icons.local_gas_station,
+                                    ),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    '진단 코드',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                  ),
+                                ),
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: obdProvider.dtc.length,
+                                  itemBuilder: (context, index) {
+                                    final dtc = DiagnosticCode.getByCode(
+                                        obdProvider.dtc[index]);
+                                    return ExpansionTile(
+                                      title: Text(dtc.code),
+                                      subtitle: Text(dtc.description),
                                       children: [
-                                        Text('Severity: ${dtc.severity.name}'),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Possible causes: ${dtc.possibleCauses}',
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text('Solutions: ${dtc.solutions}'),
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            ElevatedButton.icon(
-                                              icon: const Icon(Icons.search),
-                                              label: const Text(
-                                                'Search Online',
-                                              ),
-                                              onPressed:
-                                                  () => _searchDTCOnline(
-                                                    dtc.code,
-                                                  ),
-                                            ),
-                                            ElevatedButton.icon(
-                                              icon: const Icon(Icons.build),
-                                              label: const Text(
-                                                'Find Mechanic',
-                                              ),
-                                              onPressed: _findNearbyMechanic,
-                                            ),
-                                          ],
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text('심각도: ${dtc.severity}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  '가능한 원인: ${dtc.possibleCauses.join(", ")}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  '권장 조치: ${dtc.solutions.join(", ")}'),
+                                            ],
+                                          ),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          )
+                        : SizedBox(
+                            height: MediaQuery.of(context).size.height -
+                                MediaQuery.of(context).padding.top -
+                                kToolbarHeight -
+                                80, // 80 is the height of the connection status container
+                            child:
+                                BluetoothDeviceList(obdProvider: obdProvider),
+                          ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          floatingActionButton:
-              vehicleState.canUseDiagnostics()
-                  ? FloatingActionButton(
-                    onPressed: () {
-                      if (diagnosticsProvider.isConnected) {
-                        _showClearDTCDialog(context, diagnosticsProvider);
-                      } else {
-                        _showConnectDialog(context);
-                      }
-                    },
-                    child: const Icon(Icons.cleaning_services),
-                  )
-                  : null,
         );
       },
     );
   }
 
-  Widget _buildStatusCard(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required int count,
-    required Color color,
-  }) {
-    return SizedBox(
-      width: (MediaQuery.of(context).size.width - 48) / 3,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+  Widget _buildDataCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  color: color,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  IconData _getSeverityIcon(DTCSeverity severity) {
-    switch (severity) {
-      case DTCSeverity.critical:
-        return Icons.error;
-      case DTCSeverity.warning:
-        return Icons.warning;
-      case DTCSeverity.info:
-        return Icons.info;
-    }
-  }
-
-  Color _getSeverityColor(DTCSeverity severity) {
-    switch (severity) {
-      case DTCSeverity.critical:
-        return Colors.red;
-      case DTCSeverity.warning:
-        return Colors.orange;
-      case DTCSeverity.info:
-        return Colors.blue;
-    }
-  }
-
-  Future<void> _searchDTCOnline(String dtcCode) async {
-    final url = Uri.parse(
-      'https://www.google.com/search?q=OBD2+${Uri.encodeComponent(dtcCode)}',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
-  }
-
-  Future<void> _findNearbyMechanic() async {
-    final url = Uri.parse(
-      'https://www.google.com/maps/search/auto+repair+shop+near+me',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
-  }
-
-  void _showDrivingModeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('주행 중 제한'),
-            content: const Text('안전을 위해 주행 중에는 진단 기능을 사용할 수 없습니다.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('확인'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showClearDTCDialog(BuildContext context, DiagnosticsProvider provider) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('DTC 초기화'),
-            content: const Text('저장된 모든 진단 코드를 초기화하시겠습니까?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  final success = provider.clearDTCs();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(success ? 'DTC 초기화 완료' : 'DTC 초기화 실패'),
-                    ),
-                  );
-                },
-                child: const Text('확인'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showConnectDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('연결 필요'),
-            content: const Text('DTC를 초기화하려면 먼저 OBD2 어댑터에 연결하세요.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('확인'),
-              ),
-            ],
-          ),
     );
   }
 }

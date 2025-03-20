@@ -1,0 +1,146 @@
+{
+  "P0301": {
+    "code": "P0301",
+    "description": "Cylinder 1 Misfire Detected",
+    "severity": "high",
+    "details": "Engine cylinder 1 is misfiring. This can cause increased emissions and potential damage to the catalytic converter.",
+    "possibleCauses": [
+      "Faulty spark plugs or ignition coils",
+      "Fuel injector problems",
+      "Low compression in cylinder 1",
+      "Vacuum leaks"
+    ],
+    "solutions": [
+      "Check and replace spark plugs if necessary",
+      "Test ignition coil",
+      "Verify fuel injector operation",
+      "Perform compression test"
+    ]
+  },
+  "P0420": {
+    "code": "P0420",
+    "description": "Catalyst System Efficiency Below Threshold",
+    "severity": "medium",
+    "details": "The catalytic converter is not efficiently converting harmful exhaust gases.",
+    "possibleCauses": [
+      "Failed catalytic converter",
+      "Oxygen sensor malfunction",
+      "Exhaust leaks",
+      "Engine running too rich or lean"
+    ],
+    "solutions": [
+      "Check catalytic converter condition",
+      "Test oxygen sensors",
+      "Inspect exhaust system for leaks",
+      "Verify fuel system operation"
+    ]
+  },
+  "P0171": {
+    "code": "P0171",
+    "description": "System Too Lean (Bank 1)",
+    "severity": "medium",
+    "details": "The engine is receiving too much air or too little fuel. This could be caused by a vacuum leak or fuel delivery problem.",
+    "possibleCauses": [
+      "Vacuum leaks",
+      "Faulty mass air flow sensor",
+      "Clogged fuel injectors",
+      "Low fuel pressure"
+    ],
+    "solutions": [
+      "Check for vacuum leaks",
+      "Test mass air flow sensor",
+      "Clean or replace fuel injectors",
+      "Verify fuel pressure"
+    ]
+  },
+  "P0455": {
+    "code": "P0455",
+    "description": "Evaporative Emission System Leak Detected",
+    "severity": "low",
+    "details": "A large leak has been detected in the evaporative emission system. Check the fuel cap and EVAP hoses.",
+    "possibleCauses": [
+      "Loose or damaged fuel cap",
+      "Leaking EVAP hoses",
+      "Faulty purge valve",
+      "Damaged charcoal canister"
+    ],
+    "solutions": [
+      "Check and tighten fuel cap",
+      "Inspect EVAP hoses for leaks",
+      "Test purge valve operation",
+      "Verify charcoal canister condition"
+    ]
+  },
+  "P0101": {
+    "code": "P0101",
+    "description": "Mass Air Flow Sensor Circuit Range/Performance",
+    "severity": "medium",
+    "details": "The mass air flow sensor is not operating within its expected range.",
+    "possibleCauses": [
+      "Dirty or contaminated MAF sensor",
+      "Faulty MAF sensor",
+      "Air filter issues",
+      "Wiring problems"
+    ],
+    "solutions": [
+      "Clean MAF sensor",
+      "Replace MAF sensor if necessary",
+      "Check air filter",
+      "Inspect wiring connections"
+    ]
+  },
+  "P0131": {
+    "code": "P0131",
+    "description": "O2 Sensor Circuit Low Voltage (Bank 1 Sensor 1)",
+    "severity": "medium",
+    "details": "The oxygen sensor is reporting a low voltage condition, indicating a rich fuel mixture.",
+    "possibleCauses": [
+      "Faulty oxygen sensor",
+      "Rich fuel mixture",
+      "Wiring issues",
+      "Exhaust leaks"
+    ],
+    "solutions": [
+      "Test oxygen sensor",
+      "Check fuel pressure",
+      "Inspect wiring",
+      "Look for exhaust leaks"
+    ]
+  },
+  "P0442": {
+    "code": "P0442",
+    "description": "Evaporative Emission Control System Leak Detected (Small)",
+    "severity": "low",
+    "details": "A small leak has been detected in the evaporative emission system.",
+    "possibleCauses": [
+      "Loose fuel cap",
+      "Small EVAP system leak",
+      "Faulty purge valve",
+      "Damaged hoses"
+    ],
+    "solutions": [
+      "Tighten fuel cap",
+      "Check EVAP system for leaks",
+      "Test purge valve",
+      "Inspect hoses"
+    ]
+  },
+  "P0300": {
+    "code": "P0300",
+    "description": "Random/Multiple Cylinder Misfire Detected",
+    "severity": "high",
+    "details": "Multiple cylinders are misfiring, which can cause severe engine damage if not addressed.",
+    "possibleCauses": [
+      "Faulty spark plugs",
+      "Bad ignition coils",
+      "Fuel system problems",
+      "Low compression"
+    ],
+    "solutions": [
+      "Check all spark plugs",
+      "Test ignition coils",
+      "Verify fuel system",
+      "Perform compression test"
+    ]
+  }
+}
