@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_app_bar.dart';
+import 'package:provider/provider.dart';
+import '../providers/obd_provider.dart';
+import '../widgets/connection_status_card.dart';
 
 class MaintenanceScreen extends StatefulWidget {
   const MaintenanceScreen({super.key});
@@ -54,81 +56,92 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final obdProvider = Provider.of<OBDProvider>(context);
+
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Maintenance'),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: repairGuides.length,
-        itemBuilder: (context, index) {
-          final guide = repairGuides[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ExpansionTile(
-              title: Text(
-                guide['title'],
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              subtitle: Text(
-                '난이도: ${guide['difficulty']} | 예상 소요시간: ${guide['estimatedTime']}',
-                style: TextStyle(
-                  color: guide['difficulty'] == '쉬움'
-                      ? Colors.green
-                      : guide['difficulty'] == '중간'
-                          ? Colors.orange
-                          : Colors.red,
-                ),
-              ),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ConnectionStatusCard(obdProvider: obdProvider),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: repairGuides.length,
+              itemBuilder: (context, index) {
+                final guide = repairGuides[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: ExpansionTile(
+                    title: Text(
+                      guide['title'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '난이도: ${guide['difficulty']} | 예상 소요시간: ${guide['estimatedTime']}',
+                      style: TextStyle(
+                        color: guide['difficulty'] == '쉬움'
+                            ? Colors.green
+                            : guide['difficulty'] == '중간'
+                                ? Colors.orange
+                                : Colors.red,
+                      ),
+                    ),
                     children: [
-                      const Text(
-                        '필요한 도구:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: (guide['tools'] as List<String>)
-                            .map((tool) => Chip(label: Text(tool)))
-                            .toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        '수리 단계:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ...(guide['steps'] as List<String>).map(
-                        (step) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('• '),
-                              Expanded(child: Text(step)),
-                            ],
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '필요한 도구:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: (guide['tools'] as List<String>)
+                                  .map((tool) => Chip(label: Text(tool)))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '수리 단계:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ...(guide['steps'] as List<String>).map(
+                              (step) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('• '),
+                                    Expanded(child: Text(step)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

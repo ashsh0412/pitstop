@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/obd_provider.dart';
 import '../providers/settings_provider.dart';
+import '../models/diagnostic_code.dart';
 import 'diagnostics_screen.dart';
 import 'maintenance_screen.dart';
 import 'settings_screen.dart';
-import '../models/diagnostic_code.dart';
-import '../widgets.dart';
-import '../widgets/bluetooth_device_dialog.dart';
+import '../widgets/connection_status_card.dart';
+import '../widgets/error_codes_card.dart';
+import '../widgets/bluetooth_device_list.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,11 +23,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Dashboard'),
+      appBar: AppBar(
+        title: Text(_getTitle()),
+        actions: [
+          Consumer<OBDProvider>(
+            builder: (context, obdProvider, child) {
+              return IconButton(
+                icon: Icon(
+                  Icons.bluetooth,
+                  color: obdProvider.isConnected ? Colors.blue : Colors.grey,
+                ),
+                onPressed: () {
+                  _showBluetoothDialog(context, obdProvider);
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _selectedIndex,
         children: const [
-          _DashboardContent(),
+          _DashboardContent(), // ✅ 기존 대시보드 콘텐츠 유지
           DiagnosticsScreen(),
           MaintenanceScreen(),
           SettingsScreen(),
@@ -58,51 +76,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showConnectionDialog(BuildContext context) {
-    final obdProvider = Provider.of<OBDProvider>(context, listen: false);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(obdProvider.isConnected ? 'Connected' : 'Disconnected'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-                'Status: ${obdProvider.isConnected ? 'Connected' : 'Disconnected'}'),
-            if (obdProvider.isConnected) ...[
-              const SizedBox(height: 8),
-              Text('Device: ${obdProvider.deviceName}'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          if (!obdProvider.isConnected)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                if (obdProvider.pairedDevices.isNotEmpty) {
-                  obdProvider.connect(obdProvider.pairedDevices[0]);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'No paired devices available. Please pair a device first.'),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Connect'),
-            ),
-        ],
-      ),
-    );
-  }
-
+  // 🔥 선택된 페이지에 따라 동적으로 앱 타이틀 변경
   String _getTitle() {
     switch (_selectedIndex) {
       case 0:
@@ -117,8 +91,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return 'Vehicle Diagnostics';
     }
   }
+
+  // 📡 블루투스 모달 창 표시
+  void _showBluetoothDialog(BuildContext context, OBDProvider obdProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Bluetooth Devices',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!obdProvider.isScanning)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.search),
+                        label: const Text('Scan for Devices'),
+                        onPressed: () => obdProvider.startScan(),
+                      ),
+                    ),
+                  ),
+                if (obdProvider.isScanning)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text(
+                            '기기 검색 중...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const Divider(height: 1),
+                const Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: BluetoothDeviceList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
+// ✅ **기존 `_DashboardContent` 유지**
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent();
 
@@ -136,33 +196,43 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: 24),
           _buildRealTimeData(context, obdProvider, settingsProvider),
           const SizedBox(height: 24),
-          _buildErrorCodes(context, obdProvider),
+          ErrorCodesCard(obdProvider: obdProvider),
+          const SizedBox(height: 24),
+          if (obdProvider.diagnosticCodes.isNotEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Diagnostic Trouble Codes',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    ...obdProvider.diagnosticCodes.map((code) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.warning, color: Colors.orange),
+                              const SizedBox(width: 8),
+                              Text(code.code),
+                              const SizedBox(width: 16),
+                              Expanded(child: Text(code.description)),
+                            ],
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildConnectionStatus(BuildContext context, OBDProvider obdProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              obdProvider.isConnected
-                  ? Icons.bluetooth_connected
-                  : Icons.bluetooth_disabled,
-              color: obdProvider.isConnected ? Colors.green : Colors.red,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              obdProvider.isConnected ? 'Connected to OBD' : 'Disconnected',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      ),
-    );
+    return ConnectionStatusCard(obdProvider: obdProvider);
   }
 
   Widget _buildRealTimeData(BuildContext context, OBDProvider obdProvider,
@@ -209,62 +279,6 @@ class _DashboardContent extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildErrorCodes(BuildContext context, OBDProvider obdProvider) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width * 1,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Error Codes',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              if (obdProvider.dtc.isEmpty)
-                const Text('No error codes detected')
-              else
-                ...obdProvider.dtc.map((code) {
-                  final diagnostic = DiagnosticCode.getByCode(code);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: DiagnosticCode.getSeverityColor(
-                              diagnostic.severity),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                diagnostic.code,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                diagnostic.description,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-            ],
-          ),
-        ),
       ),
     );
   }

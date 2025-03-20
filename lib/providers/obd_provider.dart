@@ -24,7 +24,7 @@ class OBDProvider with ChangeNotifier {
   final List<DiagnosticCode> _diagnosticCodes = [];
   final Map<String, dynamic> _latestData = {};
   final List<Map<String, dynamic>> _historicalData = [];
-  StreamSubscription? _dataSubscription;
+  StreamSubscription? dataSubscription;
   DateTime? _lastUpdateTime;
   final bool _isSimulatorMode = false;
   List<blue_plus.BluetoothDevice> _pairedDevices = [];
