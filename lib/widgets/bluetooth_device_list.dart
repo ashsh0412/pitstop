@@ -1,134 +1,231 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../providers/obd_provider.dart';
+import '../styles.dart';
 
 class BluetoothDeviceList extends StatelessWidget {
-  final OBDProvider obdProvider;
-
-  const BluetoothDeviceList({
-    Key? key,
-    required this.obdProvider,
-  }) : super(key: key);
+  const BluetoothDeviceList({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final obdProvider = Provider.of<OBDProvider>(context);
+
     return Column(
       children: [
-        // Scan button
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ElevatedButton.icon(
-            onPressed: obdProvider.isScanning
-                ? obdProvider.stopScan
-                : obdProvider.startScan,
-            icon: Icon(
-              obdProvider.isScanning ? Icons.stop : Icons.search,
-            ),
-            label: Text(
-              obdProvider.isScanning ? '스캔 중지' : '장치 검색',
+        if (obdProvider.discoveredDevices.isNotEmpty) ...[
+          const Row(
+            children: [
+              Icon(Icons.search, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Discovered Devices',
+                style: AppStyles.boldText,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...obdProvider.discoveredDevices.map(
+            (device) => Card(
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.bluetooth,
+                    color: Colors.blue,
+                  ),
+                ),
+                title: Text(
+                  device.platformName.isEmpty
+                      ? 'Unknown Device'
+                      : device.platformName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID: ${device.remoteId}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 12,
+                          color: device.isConnected
+                              ? Colors.green
+                              : Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          device.isConnected ? 'Connected' : 'Not Connected',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: device.isConnected
+                                        ? Colors.green
+                                        : Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                trailing: ElevatedButton(
+                  style: AppStyles.elevatedButtonStyle,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    if (device.isConnected) {
+                      obdProvider.disconnect();
+                    } else {
+                      obdProvider.connect(device);
+                    }
+                  },
+                  child: Text(
+                    device.isConnected ? 'Disconnect' : 'Connect',
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-
-        // Device lists
-        Expanded(
-          child: SingleChildScrollView(
+        ],
+        if (obdProvider.pairedDevices.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const Row(
+            children: [
+              Icon(Icons.bluetooth_connected, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Paired Devices',
+                style: AppStyles.boldText,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...obdProvider.pairedDevices.map(
+            (device) => Card(
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.bluetooth_connected,
+                    color: Colors.green,
+                  ),
+                ),
+                title: Text(
+                  device.platformName.isEmpty
+                      ? 'Unknown Device'
+                      : device.platformName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID: ${device.remoteId}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      style: AppStyles.elevatedButtonStyle,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (device.isConnected) {
+                          obdProvider.disconnect();
+                        } else {
+                          obdProvider.connect(device);
+                        }
+                      },
+                      child: Text(
+                        device.isConnected ? 'Disconnect' : 'Connect',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                      ),
+                      onPressed: () {
+                        obdProvider.unpairDevice(device);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (!obdProvider.isScanning &&
+            obdProvider.discoveredDevices.isEmpty &&
+            obdProvider.pairedDevices.isEmpty)
+          Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Paired devices section
-                if (obdProvider.pairedDevices.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text(
-                      '페어링된 장치',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                Icon(
+                  Icons.bluetooth_disabled,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No devices found',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.grey[600],
                       ),
-                    ),
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: obdProvider.pairedDevices.length,
-                    itemBuilder: (context, index) {
-                      final device = obdProvider.pairedDevices[index];
-                      return ListTile(
-                        leading: const Icon(Icons.bluetooth_connected),
-                        title: Text(device.name ?? '알 수 없는 장치'),
-                        subtitle: Text(device.platformName),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => obdProvider.unpairDevice(device),
-                        ),
-                        onTap: () {
-                          // Connect to the device
-                          obdProvider.connect(device, useSimulator: false);
-                        },
-                      );
-                    },
-                  ),
-                ],
-
-                // Discovered devices section
-                if (obdProvider.discoveredDevices.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text(
-                      '발견된 장치',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap "Scan for Devices" to start scanning',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[500],
                       ),
-                    ),
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: obdProvider.discoveredDevices.length,
-                    itemBuilder: (context, index) {
-                      final device = obdProvider.discoveredDevices[index];
-                      return ListTile(
-                        leading: const Icon(Icons.bluetooth),
-                        title: Text(device.name ?? '알 수 없는 장치'),
-                        subtitle: Text(device.platformName),
-                        onTap: () {
-                          // Show pairing instructions
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('장치 페어링'),
-                              content: const Text(
-                                '장치를 페어링하려면 시스템 설정에서 블루투스 설정을 열어주세요.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('확인'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-
-                // No devices message
-                if (obdProvider.pairedDevices.isEmpty &&
-                    obdProvider.discoveredDevices.isEmpty &&
-                    !obdProvider.isScanning)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(
-                      child: Text('장치를 검색하려면 위의 버튼을 누르세요.'),
-                    ),
-                  ),
+                ),
               ],
             ),
           ),
-        ),
       ],
     );
   }

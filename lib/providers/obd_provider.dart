@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import '../services/obd_service.dart';
 import 'package:flutter/foundation.dart';
 import '../models/diagnostic_code.dart';
@@ -29,6 +30,7 @@ class OBDProvider with ChangeNotifier {
   List<blue_plus.BluetoothDevice> _pairedDevices = [];
   List<blue_plus.BluetoothDevice> _discoveredDevices = [];
   bool _isScanning = false;
+  bool _isPairing = false;
 
   // Getters
   bool get isConnected => _isConnected;
@@ -51,6 +53,7 @@ class OBDProvider with ChangeNotifier {
   List<blue_plus.BluetoothDevice> get pairedDevices => _pairedDevices;
   List<blue_plus.BluetoothDevice> get discoveredDevices => _discoveredDevices;
   bool get isScanning => _isScanning;
+  bool get isPairing => _isPairing;
 
   OBDProvider() {
     _initBluetooth();
@@ -59,20 +62,27 @@ class OBDProvider with ChangeNotifier {
 
   Future<void> _initBluetooth() async {
     try {
-      // Request permissions
-      final status = await Permission.bluetooth.request();
-      final scanStatus = await Permission.bluetoothScan.request();
-      final connectStatus = await Permission.bluetoothConnect.request();
-      final locationStatus = await Permission.location.request();
+      // Request Bluetooth permissions first
+      final bluetoothStatus = await Permission.bluetooth.request();
+      final bluetoothScanStatus = await Permission.bluetoothScan.request();
+      final bluetoothConnectStatus =
+          await Permission.bluetoothConnect.request();
 
-      if (status.isGranted &&
-          scanStatus.isGranted &&
-          connectStatus.isGranted &&
-          locationStatus.isGranted) {
+      // Only request location if Bluetooth permissions are granted
+      if (bluetoothStatus.isGranted &&
+          bluetoothScanStatus.isGranted &&
+          bluetoothConnectStatus.isGranted) {
+        // Check if location permission is needed (Android only)
+        if (Platform.isAndroid) {
+          final locationStatus = await Permission.location.request();
+          if (!locationStatus.isGranted) {
+            debugPrint(
+                'Location permission is required for Bluetooth scanning on Android');
+            return;
+          }
+        }
+
         // Initialize FlutterBluePlus
-        await blue_plus.FlutterBluePlus.turnOn();
-
-        // Check if Bluetooth is available
         if (await blue_plus.FlutterBluePlus.isAvailable) {
           debugPrint('Bluetooth is available');
 
@@ -90,7 +100,7 @@ class OBDProvider with ChangeNotifier {
           debugPrint('Bluetooth is not available');
         }
       } else {
-        debugPrint('Required permissions not granted');
+        debugPrint('Required Bluetooth permissions not granted');
       }
     } catch (e) {
       debugPrint('Error initializing Bluetooth: $e');
@@ -123,11 +133,28 @@ class OBDProvider with ChangeNotifier {
     });
   }
 
+  String getDeviceDisplayName(blue_plus.BluetoothDevice device) {
+    if (device.platformName.isNotEmpty ?? false) {
+      return device.platformName;
+    }
+
+    // If no name, use the MAC address/ID with a prefix
+    return 'Device (${device.remoteId.toString()})';
+  }
+
   Future<void> startScan() async {
     if (_isScanning) return;
 
     try {
-      // Check if Bluetooth is on
+      // Check permissions before scanning
+      if (Platform.isAndroid) {
+        final locationStatus = await Permission.location.status;
+        if (!locationStatus.isGranted) {
+          debugPrint('Location permission is required for scanning');
+          return;
+        }
+      }
+
       if (!await blue_plus.FlutterBluePlus.isOn) {
         debugPrint('Turning on Bluetooth...');
         await blue_plus.FlutterBluePlus.turnOn();
@@ -139,12 +166,20 @@ class OBDProvider with ChangeNotifier {
 
       debugPrint('Starting scan...');
 
-      // Start scanning
-      blue_plus.FlutterBluePlus.scanResults.listen((results) {
+      final subscription =
+          blue_plus.FlutterBluePlus.scanResults.listen((results) {
         debugPrint('Found ${results.length} devices');
         for (blue_plus.ScanResult result in results) {
+          final deviceName = getDeviceDisplayName(result.device);
           debugPrint(
-              'Device: ${result.device.platformName} (${result.device.remoteId})');
+            'Device: $deviceName\n'
+            'ID: ${result.device.remoteId}\n'
+            'RSSI: ${result.rssi} dBm\n'
+            'Status: ${result.device.isConnected ? "Connected" : "Not Connected"}\n'
+            '-------------------',
+          );
+
+          // Only add devices that are not already in the list
           if (!_discoveredDevices.contains(result.device) &&
               !_pairedDevices.contains(result.device)) {
             _discoveredDevices.add(result.device);
@@ -154,11 +189,24 @@ class OBDProvider with ChangeNotifier {
       });
 
       await blue_plus.FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 10),
+        timeout: const Duration(seconds: 4),
         androidUsesFineLocation: true,
       );
 
-      debugPrint('Scan completed');
+      await Future.delayed(const Duration(seconds: 4));
+      await subscription.cancel();
+
+      // Sort devices: named devices first, then unnamed devices
+      _discoveredDevices.sort((a, b) {
+        final aHasName = a.platformName.isNotEmpty ?? false;
+        final bHasName = b.platformName.isNotEmpty ?? false;
+
+        if (aHasName && !bHasName) return -1;
+        if (!aHasName && bHasName) return 1;
+
+        return getDeviceDisplayName(a).compareTo(getDeviceDisplayName(b));
+      });
+
       _isScanning = false;
       notifyListeners();
     } catch (e) {
@@ -183,13 +231,19 @@ class OBDProvider with ChangeNotifier {
   Future<void> connect(blue_plus.BluetoothDevice device,
       {bool useSimulator = false}) async {
     try {
+      _isPairing = true;
+      notifyListeners();
+
       await _obdService.connect(device, useSimulator: useSimulator);
       _isConnected = true;
       _deviceName = device.platformName ?? 'Unknown Device';
+      _isPairing = false;
       notifyListeners();
     } catch (e) {
       _isConnected = false;
       _deviceName = '';
+      _isPairing = false;
+      notifyListeners();
       debugPrint('Error connecting to device: $e');
       rethrow;
     }
