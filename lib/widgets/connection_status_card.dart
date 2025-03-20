@@ -23,9 +23,14 @@ class ConnectionStatusCard extends StatelessWidget {
               color: obdProvider.isConnected ? Colors.green : Colors.red,
             ),
             const SizedBox(width: 8),
-            Text(
-              obdProvider.isConnected ? 'Connected to OBD' : 'Disconnected',
-              style: Theme.of(context).textTheme.titleMedium,
+            Expanded(
+              child: Text(
+                obdProvider.isConnected
+                    ? 'Connected to ${obdProvider.deviceName}'
+                    : 'Disconnected',
+                style: Theme.of(context).textTheme.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

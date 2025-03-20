@@ -8,6 +8,7 @@ import 'settings_screen.dart';
 import '../widgets/connection_status_card.dart';
 import '../widgets/error_codes_card.dart';
 import '../widgets/bluetooth_dialog.dart';
+import '../widgets/bluetooth_required_message.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -114,47 +115,53 @@ class _DashboardContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildConnectionStatus(context, obdProvider),
-          const SizedBox(height: 24),
-          _buildRealTimeData(context, obdProvider, settingsProvider),
-          const SizedBox(height: 24),
-          ErrorCodesCard(obdProvider: obdProvider),
-          const SizedBox(height: 24),
-          if (obdProvider.diagnosticCodes.isNotEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Diagnostic Trouble Codes',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    ...obdProvider.diagnosticCodes.map((code) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.warning, color: Colors.orange),
-                              const SizedBox(width: 8),
-                              Text(code.code),
-                              const SizedBox(width: 16),
-                              Expanded(child: Text(code.description)),
-                            ],
-                          ),
-                        )),
-                  ],
+          ConnectionStatusCard(obdProvider: obdProvider),
+          if (!obdProvider.isConnected)
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: BluetoothRequiredMessage(
+                message: 'OBD 기기를 연결하여 차량 상태를 확인하세요',
+                obdProvider: obdProvider,
+              ),
+            )
+          else ...[
+            const SizedBox(height: 24),
+            _buildRealTimeData(context, obdProvider, settingsProvider),
+            const SizedBox(height: 24),
+            ErrorCodesCard(obdProvider: obdProvider),
+            const SizedBox(height: 24),
+            if (obdProvider.diagnosticCodes.isNotEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Diagnostic Trouble Codes',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      ...obdProvider.diagnosticCodes.map((code) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.warning, color: Colors.orange),
+                                const SizedBox(width: 8),
+                                Text(code.code),
+                                const SizedBox(width: 16),
+                                Expanded(child: Text(code.description)),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ),
                 ),
               ),
-            ),
+          ],
         ],
       ),
     );
-  }
-
-  Widget _buildConnectionStatus(BuildContext context, OBDProvider obdProvider) {
-    return ConnectionStatusCard(obdProvider: obdProvider);
   }
 
   Widget _buildRealTimeData(BuildContext context, OBDProvider obdProvider,

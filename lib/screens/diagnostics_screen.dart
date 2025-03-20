@@ -4,38 +4,40 @@ import '../providers/obd_provider.dart';
 import '../models/diagnostic_code.dart';
 import '../widgets/connection_status_card.dart';
 import '../widgets/error_codes_card.dart';
+import '../widgets/bluetooth_required_message.dart';
 
 class DiagnosticsScreen extends StatelessWidget {
-  const DiagnosticsScreen({Key? key}) : super(key: key);
+  const DiagnosticsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final obdProvider = Provider.of<OBDProvider>(context);
 
-    return SafeArea(
-      child: Column(
+    return Scaffold(
+      body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ConnectionStatusCard(obdProvider: obdProvider),
           ),
-          // Bluetooth Connection Status Header
-          // Diagnostic Data Section
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (obdProvider.isConnected) ...[
-                    if (obdProvider.dtc.isEmpty)
-                      ErrorCodesCard(obdProvider: obdProvider)
-                    else
-                      _buildDiagnosticList(obdProvider),
-                  ],
-                ],
-              ),
-            ),
+            child: !obdProvider.isConnected
+                ? SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: BluetoothRequiredMessage(
+                      message: 'OBD 기기를 연결하여 차량 진단을 시작하세요',
+                      obdProvider: obdProvider,
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (obdProvider.dtc.isEmpty)
+                        ErrorCodesCard(obdProvider: obdProvider)
+                      else
+                        _buildDiagnosticList(obdProvider),
+                    ],
+                  ),
           ),
         ],
       ),

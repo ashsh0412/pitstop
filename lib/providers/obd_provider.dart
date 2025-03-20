@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 class OBDProvider with ChangeNotifier {
   final OBDService _obdService = OBDService();
   bool _isConnected = false;
+  bool _isConnecting = false;
   String _deviceName = '';
   double _speed = 0;
   double _rpm = 0;
@@ -34,6 +35,7 @@ class OBDProvider with ChangeNotifier {
 
   // Getters
   bool get isConnected => _isConnected;
+  bool get isConnecting => _isConnecting;
   String get deviceName => _deviceName;
   double get speed => _speed;
   double get rpm => _rpm;
@@ -231,7 +233,7 @@ class OBDProvider with ChangeNotifier {
   Future<void> connect(blue_plus.BluetoothDevice device,
       {bool useSimulator = false}) async {
     try {
-      _isPairing = true;
+      _isConnecting = true;
       notifyListeners();
 
       await _obdService.connect(device, useSimulator: useSimulator);
@@ -246,6 +248,9 @@ class OBDProvider with ChangeNotifier {
       notifyListeners();
       debugPrint('Error connecting to device: $e');
       rethrow;
+    } finally {
+      _isConnecting = false;
+      notifyListeners();
     }
   }
 
